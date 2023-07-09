@@ -1,8 +1,8 @@
 package ru.finex.quartz.retry;
 
 import org.springframework.context.annotation.Import;
-import ru.finex.quartz.retry.autoconfigure.QuartzPersistenceDelegatesAutoConfiguration;
-import ru.finex.quartz.retry.autoconfigure.RetryableQuartzAutoConfiguration;
+import ru.finex.quartz.retry.autoconfigure.QuartzPersistenceDriverAutoConfiguration;
+import ru.finex.quartz.retry.autoconfigure.QuartzRetryAutoConfiguration;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Import({ QuartzPersistenceDelegatesAutoConfiguration.class, RetryableQuartzAutoConfiguration.class })
+@Import({ QuartzPersistenceDriverAutoConfiguration.class, QuartzRetryAutoConfiguration.class })
 public @interface EnableQuartzRetries {
 
 }

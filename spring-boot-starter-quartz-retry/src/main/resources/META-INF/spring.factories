@@ -1,4 +1,4 @@
 # AutoConfiguration
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-ru.finex.quartz.retry.autoconfigure.QuartzPersistenceDelegatesAutoConfiguration,\
-ru.finex.quartz.retry.autoconfigure.RetryableQuartzAutoConfiguration
+ru.finex.quartz.retry.autoconfigure.QuartzPersistenceDriverAutoConfiguration,\
+ru.finex.quartz.retry.autoconfigure.QuartzRetryAutoConfiguration
