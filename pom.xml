@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ru.finex</groupId>
+    <artifactId>quartz-retry</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>quartz-retry</name>
+
+    <modules>
+        <module>quartz-retry-core</module>
+        <module>spring-quartz-retry</module>
+        <module>spring-boot-starter-quartz-retry</module>
+    </modules>
+
+    <properties>
+        <lombok.version>1.18.20</lombok.version>
+        <slf4j-api.version>1.7.25</slf4j-api.version>
+        <quartz-core.version>2.3.2</quartz-core.version>
+        <commons-lang3.version>3.12.0</commons-lang3.version>
+        <quartz-retry-core.version>1.0.0-SNAPSHOT</quartz-retry-core.version>
+        <spring-quartz-retry.version>1.0.0-SNAPSHOT</spring-quartz-retry.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>ru.finex</groupId>
+                <artifactId>quartz-retry-core</artifactId>
+                <version>${quartz-retry-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ru.finex</groupId>
+                <artifactId>spring-quartz-retry</artifactId>
+                <version>${spring-quartz-retry.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.quartz-scheduler</groupId>
+                <artifactId>quartz</artifactId>
+                <version>${quartz-core.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
