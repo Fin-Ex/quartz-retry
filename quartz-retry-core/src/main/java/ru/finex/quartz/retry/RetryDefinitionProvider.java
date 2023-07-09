@@ -14,6 +14,11 @@ public class RetryDefinitionProvider {
 
     private final Map<Class<?>, JobRetryDefinition> definitionMap;
 
+    /**
+     * Get a {@link JobRetryDefinition} for specified {@literal jobClass}.
+     * @param jobClass a job class to search for.
+     * @return an {@link Optional} that wraps found {@link JobRetryDefinition}.
+     * */
     public Optional<JobRetryDefinition> getDefinition(Class<?> jobClass) {
         return Optional.ofNullable(definitionMap.get(jobClass));
     }

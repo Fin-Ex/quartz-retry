@@ -11,9 +11,9 @@ import org.quartz.utils.Key;
 @UtilityClass
 public class QuartzJobUtils {
 
-    private static final String RETRY_TRIGGER_GROUP = "$$RetryFork$$";
+    public static final String LAST_JOB_SUCCESS_VARIABLE = "{job:lastSuccessAt}";
 
-    public final String LAST_JOB_SUCCESS_VARIABLE = "{job:lastSuccessAt}";
+    private static final String RETRY_TRIGGER_GROUP = "$$RetryFork$$";
 
     /**
      * Build a quartz's job key.

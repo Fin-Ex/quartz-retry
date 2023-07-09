@@ -27,45 +27,99 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
     @Setter
     @Getter
-    private int retryCount = 0;
+    private int retryCount;
 
     @Getter
     @Setter
     private int retryMaxAttempts = -1;
 
-    private boolean retrySucceed = false;
+    private boolean retrySucceed;
 
-    private CronExpression cronEx = null;
+    private CronExpression cronEx;
 
     @Getter
     private Date startTime = new Date();
 
     @Getter
-    private Date endTime = null;
+    private Date endTime;
 
     @Getter
     @Setter
-    private Date nextFireTime = null;
+    private Date nextFireTime;
 
     @Getter
     @Setter
-    private Date previousFireTime = null;
+    private Date previousFireTime;
 
     private transient TimeZone timeZone = TimeZone.getDefault();
 
+    @Override
+    public String getCronExpression() {
+        return cronEx == null ? null : cronEx.getCronExpression();
+    }
+
+    @Override
     public void setCronExpression(String cronExpression) throws ParseException {
         TimeZone origTz = getTimeZone();
         this.cronEx = new CronExpression(cronExpression);
         this.cronEx.setTimeZone(origTz);
     }
 
-    public String getCronExpression() {
-        return cronEx == null ? null : cronEx.getCronExpression();
-    }
-
+    @Override
     public void setCronExpression(CronExpression cronExpression) {
         this.cronEx = cronExpression;
         this.timeZone = cronExpression.getTimeZone();
+    }
+
+    @Override
+    public TimeZone getTimeZone() {
+        if (cronEx != null) {
+            return cronEx.getTimeZone();
+        }
+
+        if (timeZone == null) {
+            timeZone = TimeZone.getDefault();
+        }
+        return timeZone;
+    }
+
+    @Override
+    public void setTimeZone(TimeZone timeZone) {
+        if (cronEx != null) {
+            cronEx.setTimeZone(timeZone);
+        }
+        this.timeZone = timeZone;
+    }
+
+    @Override
+    public String getExpressionSummary() {
+        return cronEx == null ? null : cronEx.getExpressionSummary();
+    }
+
+    @Override
+    public ScheduleBuilder<RetryCronTrigger> getScheduleBuilder() {
+        RetryCronScheduleBuilder cb = RetryCronScheduleBuilder.retriesSchedule(getCronExpression(), retryMaxAttempts)
+            .inTimeZone(getTimeZone());
+
+        int misfireInstruction = getMisfireInstruction();
+        switch (misfireInstruction) {
+            case MISFIRE_INSTRUCTION_SMART_POLICY:
+                break;
+            case MISFIRE_INSTRUCTION_DO_NOTHING:
+                cb.withMisfireHandlingInstructionDoNothing();
+                break;
+            case MISFIRE_INSTRUCTION_FIRE_ONCE_NOW:
+                cb.withMisfireHandlingInstructionFireAndProceed();
+                break;
+            case MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY:
+                cb.withMisfireHandlingInstructionIgnoreMisfires();
+                break;
+            default:
+                log.warn("Unrecognized misfire policy {}. Derived builder will use the default cron " +
+                    "trigger behavior (MISFIRE_INSTRUCTION_FIRE_ONCE_NOW)", misfireInstruction);
+        }
+
+        return cb;
     }
 
     @Override
@@ -102,35 +156,14 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
     }
 
     @Override
-    public TimeZone getTimeZone() {
-        if(cronEx != null) {
-            return cronEx.getTimeZone();
-        }
-
-        if (timeZone == null) {
-            timeZone = TimeZone.getDefault();
-        }
-        return timeZone;
-    }
-
-    public void setTimeZone(TimeZone timeZone) {
-        if(cronEx != null) {
-            cronEx.setTimeZone(timeZone);
-        }
-        this.timeZone = timeZone;
-    }
-
-    @Override
-    public Date getFireTimeAfter(Date afterTime) {
-        if (afterTime == null) {
-            afterTime = new Date();
-        }
+    public Date getFireTimeAfter(Date afterTimeSrc) {
+        Date afterTime = afterTimeSrc != null ? afterTimeSrc : new Date();
 
         if (getStartTime().after(afterTime)) {
             afterTime = new Date(getStartTime().getTime() - 1000L);
         }
 
-        if (getEndTime() != null && (afterTime.compareTo(getEndTime()) >= 0)) {
+        if (getEndTime() != null && afterTime.compareTo(getEndTime()) >= 0) {
             return null;
         }
 
@@ -151,7 +184,7 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
             resultTime = (cronEx == null) ? null : cronEx.getFinalFireTime();
         }
 
-        if ((resultTime != null) && (getStartTime() != null) && (resultTime.before(getStartTime()))) {
+        if (resultTime != null && getStartTime() != null && resultTime.before(getStartTime())) {
             return null;
         }
 
@@ -167,8 +200,9 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
     public void updateAfterMisfire(org.quartz.Calendar cal) {
         int instr = getMisfireInstruction();
 
-        if(instr == Trigger.MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY)
+        if (instr == Trigger.MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY) {
             return;
+        }
 
         if (instr == MISFIRE_INSTRUCTION_SMART_POLICY) {
             instr = MISFIRE_INSTRUCTION_FIRE_ONCE_NOW;
@@ -176,56 +210,13 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
         if (instr == MISFIRE_INSTRUCTION_DO_NOTHING) {
             Date newFireTime = getFireTimeAfter(new Date());
-            while (newFireTime != null && cal != null
-                && !cal.isTimeIncluded(newFireTime.getTime())) {
+            while (newFireTime != null && cal != null && !cal.isTimeIncluded(newFireTime.getTime())) {
                 newFireTime = getFireTimeAfter(newFireTime);
             }
             setNextFireTime(newFireTime);
         } else if (instr == MISFIRE_INSTRUCTION_FIRE_ONCE_NOW) {
             setNextFireTime(new Date());
         }
-    }
-
-    public boolean willFireOn(java.util.Calendar test) {
-        return willFireOn(test, false);
-    }
-
-    public boolean willFireOn(java.util.Calendar test, boolean dayOnly) {
-        test = (java.util.Calendar) test.clone();
-
-        test.set(java.util.Calendar.MILLISECOND, 0); // don't compare millis.
-
-        if(dayOnly) {
-            test.set(java.util.Calendar.HOUR_OF_DAY, 0);
-            test.set(java.util.Calendar.MINUTE, 0);
-            test.set(java.util.Calendar.SECOND, 0);
-        }
-
-        Date testTime = test.getTime();
-
-        Date fta = getFireTimeAfter(new Date(test.getTime().getTime() - 1000));
-
-        if(fta == null)
-            return false;
-
-        java.util.Calendar p = java.util.Calendar.getInstance(test.getTimeZone());
-        p.setTime(fta);
-
-        int year = p.get(java.util.Calendar.YEAR);
-        int month = p.get(java.util.Calendar.MONTH);
-        int day = p.get(java.util.Calendar.DATE);
-
-        if(dayOnly) {
-            return (year == test.get(java.util.Calendar.YEAR)
-                && month == test.get(java.util.Calendar.MONTH)
-                && day == test.get(java.util.Calendar.DATE));
-        }
-
-        while(fta.before(testTime)) {
-            fta = getFireTimeAfter(fta);
-        }
-
-        return fta.equals(testTime);
     }
 
     @Override
@@ -239,8 +230,7 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
         previousFireTime = nextFireTime;
         nextFireTime = getFireTimeAfter(nextFireTime);
 
-        while (nextFireTime != null && calendar != null
-            && !calendar.isTimeIncluded(nextFireTime.getTime())) {
+        while (nextFireTime != null && calendar != null && !calendar.isTimeIncluded(nextFireTime.getTime())) {
             nextFireTime = getFireTimeAfter(nextFireTime);
         }
     }
@@ -258,10 +248,11 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
             nextFireTime = getFireTimeAfter(nextFireTime);
 
-            if(nextFireTime == null)
+            if (nextFireTime == null) {
                 break;
+            }
 
-            //avoid infinite loop
+            // avoid infinite loop
             // Use gregorian only because the constant is based on Gregorian
             java.util.Calendar c = new java.util.GregorianCalendar();
             c.setTime(nextFireTime);
@@ -269,9 +260,9 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
                 nextFireTime = null;
             }
 
-            if(nextFireTime != null && nextFireTime.before(now)) {
+            if (nextFireTime != null && nextFireTime.before(now)) {
                 long diff = now.getTime() - nextFireTime.getTime();
-                if(diff >= misfireThreshold) {
+                if (diff >= misfireThreshold) {
                     nextFireTime = getFireTimeAfter(nextFireTime);
                 }
             }
@@ -282,18 +273,14 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
     public Date computeFirstFireTime(org.quartz.Calendar calendar) {
         nextFireTime = getFireTimeAfter(new Date(getStartTime().getTime() - 1000L));
 
-        while (nextFireTime != null && calendar != null
-            && !calendar.isTimeIncluded(nextFireTime.getTime())) {
+        while (nextFireTime != null && calendar != null && !calendar.isTimeIncluded(nextFireTime.getTime())) {
             nextFireTime = getFireTimeAfter(nextFireTime);
         }
 
         return nextFireTime;
     }
 
-    public String getExpressionSummary() {
-        return cronEx == null ? null : cronEx.getExpressionSummary();
-    }
-
+    @Override
     public boolean hasAdditionalProperties() {
         return false;
     }
@@ -305,32 +292,6 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
         }
 
         return super.executionComplete(context, result);
-    }
-
-    @Override
-    public ScheduleBuilder<RetryCronTrigger> getScheduleBuilder() {
-        RetryCronScheduleBuilder cb = RetryCronScheduleBuilder.retriesSchedule(getCronExpression(), retryMaxAttempts)
-            .inTimeZone(getTimeZone());
-
-        int misfireInstruction = getMisfireInstruction();
-        switch(misfireInstruction) {
-            case MISFIRE_INSTRUCTION_SMART_POLICY:
-                break;
-            case MISFIRE_INSTRUCTION_DO_NOTHING:
-                cb.withMisfireHandlingInstructionDoNothing();
-                break;
-            case MISFIRE_INSTRUCTION_FIRE_ONCE_NOW:
-                cb.withMisfireHandlingInstructionFireAndProceed();
-                break;
-            case MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY:
-                cb.withMisfireHandlingInstructionIgnoreMisfires();
-                break;
-            default:
-                log.warn("Unrecognized misfire policy {}. Derived builder will use the default cron " +
-                    "trigger behavior (MISFIRE_INSTRUCTION_FIRE_ONCE_NOW)", misfireInstruction);
-        }
-
-        return cb;
     }
 
     @Override
@@ -347,11 +308,11 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
     }
 
     protected Date getTimeAfter(Date afterTime) {
-        return (cronEx == null) ? null : cronEx.getTimeAfter(afterTime);
+        return cronEx == null ? null : cronEx.getTimeAfter(afterTime);
     }
 
     protected Date getTimeBefore(Date eTime) {
-        return (cronEx == null) ? null : cronEx.getTimeBefore(eTime);
+        return cronEx == null ? null : cronEx.getTimeBefore(eTime);
     }
 
 }

@@ -61,14 +61,17 @@ public class RetryCronTriggerPersistenceDelegate implements TriggerPersistenceDe
         this.schedNameLiteral = "'" + schedName + "'";
     }
 
+    @Override
     public String getHandledTriggerTypeDiscriminator() {
         return TTYPE_RETRY_CRON;
     }
 
+    @Override
     public boolean canHandleTriggerType(OperableTrigger trigger) {
-        return ((trigger instanceof RetryCronTriggerImpl) && !((RetryCronTriggerImpl)trigger).hasAdditionalProperties());
+        return trigger instanceof RetryCronTriggerImpl && !((RetryCronTriggerImpl)trigger).hasAdditionalProperties();
     }
 
+    @Override
     public int deleteExtendedTriggerProperties(Connection conn, TriggerKey triggerKey) throws SQLException {
         PreparedStatement ps = null;
 
@@ -83,6 +86,7 @@ public class RetryCronTriggerPersistenceDelegate implements TriggerPersistenceDe
         }
     }
 
+    @Override
     public int insertExtendedTriggerProperties(Connection conn, OperableTrigger trigger,
                                                String state, JobDetail jobDetail) throws SQLException {
         RetryCronTriggerImpl retryCronTrigger = (RetryCronTriggerImpl)trigger;
@@ -103,6 +107,7 @@ public class RetryCronTriggerPersistenceDelegate implements TriggerPersistenceDe
         }
     }
 
+    @Override
     public TriggerPropertyBundle loadExtendedTriggerProperties(Connection conn, TriggerKey triggerKey) throws SQLException {
         PreparedStatement ps = null;
         ResultSet rs = null;
@@ -121,8 +126,9 @@ public class RetryCronTriggerPersistenceDelegate implements TriggerPersistenceDe
 
                 RetryCronScheduleBuilder cb = RetryCronScheduleBuilder.retriesSchedule(cronExpr, maxAttempts);
 
-                if (timeZoneId != null)
+                if (timeZoneId != null) {
                     cb.inTimeZone(TimeZone.getTimeZone(timeZoneId));
+                }
 
                 return new TriggerPropertyBundle(cb, new String[]{"retryCount"}, new Object[]{retryCount});
             }
@@ -135,6 +141,7 @@ public class RetryCronTriggerPersistenceDelegate implements TriggerPersistenceDe
         }
     }
 
+    @Override
     public int updateExtendedTriggerProperties(Connection conn, OperableTrigger trigger,
                                                String state, JobDetail jobDetail) throws SQLException {
         RetryCronTriggerImpl retryCronTrigger = (RetryCronTriggerImpl)trigger;
@@ -148,7 +155,6 @@ public class RetryCronTriggerPersistenceDelegate implements TriggerPersistenceDe
             ps.setInt(4, retryCronTrigger.getRetryMaxAttempts());
             ps.setString(5, trigger.getKey().getName());
             ps.setString(6, trigger.getKey().getGroup());
-
 
             return ps.executeUpdate();
         } finally {

@@ -30,8 +30,17 @@ public abstract class AbstractJobListener implements JobListener {
         jobExecutionFailed(context, jobException);
     }
 
+    /**
+     * Called by this {@link JobListener} when job execution completes successfully.
+     * @param context completed job context bundle.
+     * */
     public abstract void jobExecutionCompleted(JobExecutionContext context);
 
+    /**
+     * Called by this {@link JobListener} when job execution completed with an exception.
+     * @param context completed job context bundle.
+     * @param jobException an exception occurred.
+     * */
     public abstract void jobExecutionFailed(JobExecutionContext context, JobExecutionException jobException);
 
 }

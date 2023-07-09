@@ -16,6 +16,8 @@
     </modules>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
         <lombok.version>1.18.20</lombok.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
         <quartz-core.version>2.3.2</quartz-core.version>

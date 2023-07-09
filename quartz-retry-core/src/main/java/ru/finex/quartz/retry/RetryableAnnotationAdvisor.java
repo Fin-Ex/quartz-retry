@@ -38,13 +38,15 @@ public class RetryableAnnotationAdvisor {
 
     private String resolve(String expression) {
         Matcher matcher = ENV_PATTERN.matcher(expression);
+
+        String result;
         while (matcher.find()) {
             String envName = matcher.group(1);
             String defaultValue = ObjectUtils.defaultIfNull(matcher.group(2), ""); // todo oracle: mb throw ex
             String value = propertyResolver.getProperty(envName, defaultValue);
 
-            expression = matcher.replaceFirst(value);
-            matcher = ENV_PATTERN.matcher(expression);
+            result = matcher.replaceFirst(value);
+            matcher = ENV_PATTERN.matcher(result);
         }
 
         return expression;

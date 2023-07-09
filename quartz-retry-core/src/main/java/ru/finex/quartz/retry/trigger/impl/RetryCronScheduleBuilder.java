@@ -42,6 +42,15 @@ public class RetryCronScheduleBuilder extends ScheduleBuilder<RetryCronTrigger> 
         return trigger;
     }
 
+    /**
+     * Create a {@link RetryCronScheduleBuilder} with the given {@literal cronExpression} string and
+     * {@literal maxAttempts} for retries configuration.
+     *
+     * @param cronExpression the cron expression string to base the schedule on.
+     * @param maxAttempts max retries attempts configuration.
+     * @return a new instance of {@link RetryCronScheduleBuilder}.
+     * @throws RuntimeException wrapping a {@link ParseException} if provided {@literal cronExpression} invalid.
+     * */
     public static RetryCronScheduleBuilder retriesSchedule(String cronExpression, int maxAttempts) {
         try {
             return retriesSchedule(new CronExpression(cronExpression), maxAttempts);
@@ -52,10 +61,25 @@ public class RetryCronScheduleBuilder extends ScheduleBuilder<RetryCronTrigger> 
         }
     }
 
+    /**
+     * Create a {@link RetryCronScheduleBuilder} with the given parsed {@literal cronExpression} and
+     * {@literal maxAttempts} for retries configuration.
+     *
+     * @param cronExpression the parsed cron expression to base the schedule on.
+     * @param maxAttempts max retries attempts configuration.
+     * @return a new instance of {@link RetryCronScheduleBuilder}.
+     * */
     public static RetryCronScheduleBuilder retriesSchedule(CronExpression cronExpression, int maxAttempts) {
         return new RetryCronScheduleBuilder(cronExpression, maxAttempts);
     }
 
+    /**
+     * The {@link TimeZone} in which to base the schedule.
+     *
+     * @param timezone the time-zone for the schedule.
+     * @return the updated CronScheduleBuilder
+     * @see CronExpression#getTimeZone()
+     */
     public RetryCronScheduleBuilder inTimeZone(TimeZone timezone) {
         cronExpression.setTimeZone(timezone);
         return this;
