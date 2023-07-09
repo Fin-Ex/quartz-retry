@@ -19,6 +19,7 @@ import ru.finex.quartz.retry.RetryableAnnotationAdvisor;
 import ru.finex.quartz.retry.SpringPropertyResolver;
 import ru.finex.quartz.retry.annotation.RetryableJob;
 import ru.finex.quartz.retry.job.JobRetryDefinition;
+import ru.finex.quartz.retry.listener.RetryableJobExecutionListener;
 import ru.finex.quartz.retry.utils.PropertyResolver;
 
 import java.util.List;
@@ -51,6 +52,11 @@ public class RetryableQuartzAutoConfiguration {
     public RetryDefinitionProvider retryDefinitionProvider(PropertyResolver propertyResolver) {
         Map<Class<?>, JobRetryDefinition> definitionMap = getDefinitionMap(propertyResolver);
         return new RetryDefinitionProvider(definitionMap);
+    }
+
+    @Bean
+    public RetryableJobExecutionListener retryableJobExecutionListener(RetryDefinitionProvider retryDefinitionProvider) {
+        return new RetryableJobExecutionListener(retryDefinitionProvider);
     }
 
     private Map<Class<?>, JobRetryDefinition> getDefinitionMap(PropertyResolver propertyResolver) {
