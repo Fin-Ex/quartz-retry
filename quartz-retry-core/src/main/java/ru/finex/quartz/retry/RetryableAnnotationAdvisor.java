@@ -39,7 +39,7 @@ public class RetryableAnnotationAdvisor {
     private String resolve(String expression) {
         Matcher matcher = ENV_PATTERN.matcher(expression);
 
-        String result;
+        String result = expression;
         while (matcher.find()) {
             String envName = matcher.group(1);
             String defaultValue = ObjectUtils.defaultIfNull(matcher.group(2), ""); // todo oracle: mb throw ex
@@ -49,7 +49,7 @@ public class RetryableAnnotationAdvisor {
             matcher = ENV_PATTERN.matcher(result);
         }
 
-        return expression;
+        return result;
     }
 
     private boolean isEnvPlaceholder(String value) {
