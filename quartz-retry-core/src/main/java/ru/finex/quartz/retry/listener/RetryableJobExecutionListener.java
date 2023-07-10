@@ -64,6 +64,7 @@ public class RetryableJobExecutionListener extends AbstractJobListener {
             .withPriority(executionCtx.getTrigger().getPriority())
             .withSchedule(RetryCronScheduleBuilder.retriesSchedule(retryDefinition.getRetryCron(), retryDefinition.getMaxAttempts()))
             .withIdentity(QuartzJobUtils.getRetryTriggerKey())
+            .usingJobData(executionCtx.getJobDetail().getJobDataMap())
             .build();
 
         log.warn("Job [class: {}, jobKey: {}] failed and will run again according to cron schedule: [{}]",

@@ -2,7 +2,6 @@ package ru.finex.quartz.retry.autoconfigure;
 
 import org.quartz.JobListener;
 import org.quartz.Scheduler;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -10,17 +9,13 @@ import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.quartz.QuartzAutoConfiguration;
-import org.springframework.boot.autoconfigure.quartz.QuartzDataSource;
-import org.springframework.boot.autoconfigure.quartz.QuartzProperties;
 import org.springframework.boot.autoconfigure.quartz.SchedulerFactoryBeanCustomizer;
-import org.springframework.boot.autoconfigure.sql.init.OnDatabaseInitializationCondition;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
@@ -36,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
 
 /**
  * @author oracle
@@ -44,23 +38,11 @@ import javax.sql.DataSource;
 @AutoConfiguration
 @AutoConfigureAfter(QuartzAutoConfiguration.class)
 @ConditionalOnClass({ Scheduler.class, SchedulerFactoryBean.class })
+@Import(QuartzRetryDataSourceAutoConfiguration.class)
 public class QuartzRetryAutoConfiguration {
-
-    private static final String DDL_CLASSPATH_LOCATION = "classpath:ddl/tables_qrtz_retry_@@platform@@.sql";
 
     @Autowired
     private Environment environment;
-
-    @Bean
-    @ConditionalOnMissingBean(QuartzRetryDataSourceScriptDatabaseInitializer.class)
-    @Conditional(QuartzRetryAutoConfiguration.OnQuartzDatasourceInitializationCondition.class)
-    @ConditionalOnProperty(prefix = "spring.quartz", name = "job-store-type", havingValue = "jdbc")
-    public QuartzRetryDataSourceScriptDatabaseInitializer quartzRetryDataSourceScriptDatabaseInitializer(
-        DataSource dataSource, @QuartzDataSource ObjectProvider<DataSource> quartzDataSource, QuartzProperties properties) {
-
-        DataSource dataSourceToUse = getDataSource(dataSource, quartzDataSource);
-        return new QuartzRetryDataSourceScriptDatabaseInitializer(dataSourceToUse, properties, DDL_CLASSPATH_LOCATION);
-    }
 
     @Bean
     public SchedulerFactoryBeanCustomizer schedulerFactoryBeanCustomizer(List<JobListener> jobListeners) {
@@ -119,19 +101,6 @@ public class QuartzRetryAutoConfiguration {
     private String getRequiredBaseApplicationPackage(ApplicationContext applicationContext) {
         return AutoConfigurationPackages.get(applicationContext.getAutowireCapableBeanFactory()).stream().findAny()
             .orElseThrow(() -> new ApplicationContextException("Unable to get application base package"));
-    }
-
-    private DataSource getDataSource(DataSource dataSource, ObjectProvider<DataSource> quartzDataSource) {
-        DataSource dataSourceIfAvailable = quartzDataSource.getIfAvailable();
-        return (dataSourceIfAvailable != null) ? dataSourceIfAvailable : dataSource;
-    }
-
-    static class OnQuartzDatasourceInitializationCondition extends OnDatabaseInitializationCondition {
-
-        OnQuartzDatasourceInitializationCondition() {
-            super("Quartz", "spring.quartz.jdbc.initialize-schema");
-        }
-
     }
 
 }

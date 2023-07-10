@@ -1,5 +1,3 @@
-drop table if exists qrtz_retry_cron_triggers;
-
 create table if not exists qrtz_retry_cron_triggers
 (
   sched_name varchar(120) not null,

@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @AutoConfiguration
 @AutoConfigureBefore(QuartzAutoConfiguration.class)
 @ConditionalOnClass({ Scheduler.class, SchedulerFactoryBean.class })
-public class QuartzPersistenceDriverAutoConfiguration implements BeanPostProcessor {
+public class QuartzPlatformDriverAutoConfiguration implements BeanPostProcessor {
 
     private static final String QUARTZ_JOB_STORE_DRIVER_DELEGATE_INIT_PROP = "org.quartz.jobStore.driverDelegateInitString";
 
