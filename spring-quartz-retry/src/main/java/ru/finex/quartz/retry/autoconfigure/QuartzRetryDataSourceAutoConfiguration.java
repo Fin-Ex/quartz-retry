@@ -34,7 +34,7 @@ public class QuartzRetryDataSourceAutoConfiguration {
 
     private static final String[] UP_DDL_CLASSPATH_LOCATIONS = {"classpath:ddl/up_tables_qrtz_retry_@@platform@@.sql"};
 
-    private static final String[] DOWN_DDL_CLASSPATH_LOCATION = {"classpath:ddl/down_tables_qrtz_retry_@@platform@@.sql"};
+    private static final String[] DOWN_DDL_CLASSPATH_LOCATIONS = {"classpath:ddl/down_tables_qrtz_retry_@@platform@@.sql"};
 
     private static DataSource getDataSource(DataSource dataSource, ObjectProvider<DataSource> quartzDataSource) {
         DataSource dataSourceIfAvailable = quartzDataSource.getIfAvailable();
@@ -51,7 +51,7 @@ public class QuartzRetryDataSourceAutoConfiguration {
             DataSource dataSource, @QuartzDataSource ObjectProvider<DataSource> quartzDataSource, QuartzProperties properties) {
 
             DataSource dataSourceToUse = getDataSource(dataSource, quartzDataSource);
-            return new QuartzRetryDataSourceScriptDatabaseInitializer(dataSourceToUse, properties, DOWN_DDL_CLASSPATH_LOCATION);
+            return new QuartzRetryDataSourceScriptDatabaseInitializer(dataSourceToUse, properties, DOWN_DDL_CLASSPATH_LOCATIONS);
         }
 
     }

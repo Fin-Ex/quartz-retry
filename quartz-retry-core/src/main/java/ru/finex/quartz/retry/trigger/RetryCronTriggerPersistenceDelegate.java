@@ -22,34 +22,34 @@ public class RetryCronTriggerPersistenceDelegate implements TriggerPersistenceDe
 
     private static final String TTYPE_RETRY_CRON = "R_CRON";
 
-    private static final String COL_RETRIES_COUNT = "RETRIES_COUNT";
+    private static final String COL_RETRIES_COUNT = "retries_count";
 
-    private static final String COL_MAX_ATTEMPTS = "MAX_ATTEMPTS";
+    private static final String COL_MAX_ATTEMPTS = "max_attempts";
 
-    private static final String TABLE_RETRY_CRON_TRIGGERS = "RETRY_CRON_TRIGGERS";
+    private static final String TABLE_RETRY_CRON_TRIGGERS = "retry_cron_triggers";
 
-    private static final String DELETE_RETRY_CRON_TRIGGER = "DELETE FROM " +
-        TABLE_PREFIX_SUBST + TABLE_RETRY_CRON_TRIGGERS + " WHERE " +
-        COL_SCHEDULER_NAME + " = " + SCHED_NAME_SUBST + " AND " +
-        COL_TRIGGER_NAME + " = ? AND " + COL_TRIGGER_GROUP + " = ?";
+    private static final String DELETE_RETRY_CRON_TRIGGER = "delete from " +
+        TABLE_PREFIX_SUBST + TABLE_RETRY_CRON_TRIGGERS + " where " +
+        COL_SCHEDULER_NAME + " = " + SCHED_NAME_SUBST + " and " +
+        COL_TRIGGER_NAME + " = ? and " + COL_TRIGGER_GROUP + " = ?";
 
-    private static final String INSERT_RETRY_CRON_TRIGGER = "INSERT INTO " +
+    private static final String INSERT_RETRY_CRON_TRIGGER = "insert into " +
         TABLE_PREFIX_SUBST + TABLE_RETRY_CRON_TRIGGERS + " (" +
         COL_SCHEDULER_NAME + ", " + COL_TRIGGER_NAME + ", " + COL_TRIGGER_GROUP + ", " +
         COL_CRON_EXPRESSION + ", " + COL_TIME_ZONE_ID + ", " + COL_RETRIES_COUNT  + ", " + COL_MAX_ATTEMPTS + ") " +
-        " VALUES(" + SCHED_NAME_SUBST + ", ?, ?, ?, ?, ?, ?)";
+        " values(" + SCHED_NAME_SUBST + ", ?, ?, ?, ?, ?, ?)";
 
-    private static final String SELECT_RETRY_CRON_TRIGGER = "SELECT * FROM " +
-        TABLE_PREFIX_SUBST + TABLE_RETRY_CRON_TRIGGERS + " WHERE " +
+    private static final String SELECT_RETRY_CRON_TRIGGER = "select * from " +
+        TABLE_PREFIX_SUBST + TABLE_RETRY_CRON_TRIGGERS + " where " +
         COL_SCHEDULER_NAME + " = " + SCHED_NAME_SUBST +
-        " AND " + COL_TRIGGER_NAME + " = ? AND " + COL_TRIGGER_GROUP + " = ?";
+        " and " + COL_TRIGGER_NAME + " = ? and " + COL_TRIGGER_GROUP + " = ?";
 
-    private static final String UPDATE_RETRY_CRON_TRIGGER = "UPDATE " +
-        TABLE_PREFIX_SUBST + TABLE_RETRY_CRON_TRIGGERS + " SET " +
+    private static final String UPDATE_RETRY_CRON_TRIGGER = "update " +
+        TABLE_PREFIX_SUBST + TABLE_RETRY_CRON_TRIGGERS + " set " +
         COL_CRON_EXPRESSION + " = ?, " + COL_TIME_ZONE_ID + " = ?, " +
         COL_RETRIES_COUNT + " = ?, " + COL_MAX_ATTEMPTS + " = ? " +
-        "WHERE " + COL_SCHEDULER_NAME + " = " + SCHED_NAME_SUBST +
-        " AND " + COL_TRIGGER_NAME + " = ? AND " + COL_TRIGGER_GROUP + " = ?";
+        "where " + COL_SCHEDULER_NAME + " = " + SCHED_NAME_SUBST +
+        " and " + COL_TRIGGER_NAME + " = ? and " + COL_TRIGGER_GROUP + " = ?";
 
     protected String tablePrefix;
 
@@ -89,7 +89,7 @@ public class RetryCronTriggerPersistenceDelegate implements TriggerPersistenceDe
     @Override
     public int insertExtendedTriggerProperties(Connection conn, OperableTrigger trigger,
                                                String state, JobDetail jobDetail) throws SQLException {
-        RetryCronTriggerImpl retryCronTrigger = (RetryCronTriggerImpl)trigger;
+        RetryCronTriggerImpl retryCronTrigger = (RetryCronTriggerImpl) trigger;
 
         PreparedStatement ps = null;
         try {
@@ -144,7 +144,7 @@ public class RetryCronTriggerPersistenceDelegate implements TriggerPersistenceDe
     @Override
     public int updateExtendedTriggerProperties(Connection conn, OperableTrigger trigger,
                                                String state, JobDetail jobDetail) throws SQLException {
-        RetryCronTriggerImpl retryCronTrigger = (RetryCronTriggerImpl)trigger;
+        RetryCronTriggerImpl retryCronTrigger = (RetryCronTriggerImpl) trigger;
 
         PreparedStatement ps = null;
         try {
