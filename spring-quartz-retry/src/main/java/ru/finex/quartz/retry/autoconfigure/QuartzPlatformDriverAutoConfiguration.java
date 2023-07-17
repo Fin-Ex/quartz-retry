@@ -33,8 +33,8 @@ public class QuartzPlatformDriverAutoConfiguration implements BeanPostProcessor 
 
     @Override
     public Object postProcessBeforeInitialization(@NonNull Object bean, @NonNull String beanName) throws BeansException {
-        if (bean instanceof QuartzProperties config) {
-            postProcessQuartzPersistenceDelegates(config);
+        if (bean instanceof QuartzProperties) {
+            postProcessQuartzPersistenceDelegates((QuartzProperties) bean);
         }
 
         return bean;
