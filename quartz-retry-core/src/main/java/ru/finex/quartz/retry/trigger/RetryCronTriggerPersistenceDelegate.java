@@ -20,8 +20,6 @@ import java.util.TimeZone;
  */
 public class RetryCronTriggerPersistenceDelegate implements TriggerPersistenceDelegate, StdJDBCConstants {
 
-    private static final String TTYPE_RETRY_CRON = "R_CRON";
-
     private static final String COL_RETRIES_COUNT = "retries_count";
 
     private static final String COL_MAX_ATTEMPTS = "max_attempts";
@@ -63,7 +61,7 @@ public class RetryCronTriggerPersistenceDelegate implements TriggerPersistenceDe
 
     @Override
     public String getHandledTriggerTypeDiscriminator() {
-        return TTYPE_RETRY_CRON;
+        return "R_CRON";
     }
 
     @Override
