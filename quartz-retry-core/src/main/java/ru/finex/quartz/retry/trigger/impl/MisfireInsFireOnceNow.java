@@ -7,7 +7,6 @@ package ru.finex.quartz.retry.trigger.impl;
 import java.util.Date;
 import org.quartz.Calendar;
 import org.quartz.spi.OperableTrigger;
-import static ru.finex.quartz.retry.trigger.RetryCronTrigger.MISFIRE_INSTRUCTION_FIRE_ONCE_NOW;
 
 /**
  *

@@ -99,7 +99,11 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
     @Override
     public String getExpressionSummary() {
-        return cronEx == null ? null : cronEx.getExpressionSummary();
+        if (cronEx != null) {
+        return cronEx.getExpressionSummary();
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -182,7 +186,9 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
     @Override
     protected boolean validateMisfireInstruction(int misfireInstruction) {
-        return misfireInstruction >= MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY && misfireInstruction <= MISFIRE_INSTRUCTION_DO_NOTHING;
+        boolean isInRange = misfireInstruction >= MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY && 
+                            misfireInstruction <= MISFIRE_INSTRUCTION_DO_NOTHING;
+        return isInRange;
     }
 
     @Override
@@ -267,7 +273,7 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
 
     @Override
-    public Date computeFirstFireTime(org.quartz.Calendar calendar) {
+    public Date computeFirstFireTime(Calendar calendar) {
         nextFireTime = getFireTimeAfter(new Date(getStartTime().getTime() - 1000L));
 
         while (nextFireTime != null && calendar != null && !calendar.isTimeIncluded(nextFireTime.getTime())) {
@@ -305,11 +311,19 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
     }
 
     protected Date getTimeAfter(Date afterTime) {
-        return cronEx == null ? null : cronEx.getTimeAfter(afterTime);
+        if (cronEx != null) {
+            return cronEx.getTimeAfter(afterTime);
+        } else {
+            return null;
+        }
     }
 
     protected Date getTimeBefore(Date eTime) {
-        return cronEx == null ? null : cronEx.getTimeBefore(eTime);
+        if (cronEx != null) {
+            return cronEx.getTimeBefore(eTime);
+        } else {
+            return null;
+        }
     }
 
 }
