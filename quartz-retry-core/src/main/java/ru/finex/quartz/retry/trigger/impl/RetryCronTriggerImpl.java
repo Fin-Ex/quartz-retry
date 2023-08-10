@@ -223,37 +223,52 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
     @Override
     public void updateWithNewCalendar(Calendar calendar, long misfireThreshold) {
-        nextFireTime = getFireTimeAfter(previousFireTime);
+        recalculateNextFireTime(calendar, misfireThreshold);
+    }
 
-        if (nextFireTime == null || calendar == null) {
-            return;
-        }
+    private void recalculateNextFireTime(Calendar calendar, long misfireThreshold) {
+        nextFireTime = calculateNextFireTime(nextFireTime);
 
-        Date now = new Date();
-        while (nextFireTime != null && !calendar.isTimeIncluded(nextFireTime.getTime())) {
+        while (nextFireTime != null && !isTimeIncludedInCalendar(calendar, nextFireTime)) {
+            nextFireTime = calculateNextFireTime(nextFireTime);
 
-            nextFireTime = getFireTimeAfter(nextFireTime);
-
-            if (nextFireTime == null) {
+            if (nextFireTime == null || isYearGreaterThanThreshold(nextFireTime)) {
                 break;
             }
 
-            // avoid infinite loop
-            // Use gregorian only because the constant is based on Gregorian
-            java.util.Calendar c = new java.util.GregorianCalendar();
-            c.setTime(nextFireTime);
-            if (c.get(java.util.Calendar.YEAR) > YEAR_TO_GIVEUP_SCHEDULING_AT) {
-                nextFireTime = null;
-            }
-
-            if (nextFireTime != null && nextFireTime.before(now)) {
-                long diff = now.getTime() - nextFireTime.getTime();
-                if (diff >= misfireThreshold) {
-                    nextFireTime = getFireTimeAfter(nextFireTime);
-                }
+            if (isNextFireTimeBeforeNow(nextFireTime)) {
+                handleMisfireThreshold(nextFireTime, misfireThreshold);
             }
         }
     }
+
+    private Date calculateNextFireTime(Date fireTime) {
+        return (fireTime != null) ? getFireTimeAfter(fireTime) : null;
+    }
+
+    private boolean isTimeIncludedInCalendar(Calendar calendar, Date time) {
+        return calendar != null && calendar.isTimeIncluded(time.getTime());
+    }
+
+    private boolean isYearGreaterThanThreshold(Date date) {
+        java.util.Calendar calendar = new java.util.GregorianCalendar();
+        calendar.setTime(date);
+        return calendar.get(java.util.Calendar.YEAR) > YEAR_TO_GIVEUP_SCHEDULING_AT;
+    }
+
+    private boolean isNextFireTimeBeforeNow(Date nextFireTime) {
+        Date now = new Date();
+        return nextFireTime != null && nextFireTime.before(now);
+    }
+
+    private void handleMisfireThreshold(Date nextFireTime, long misfireThreshold) {
+        Date now = new Date();
+        long diff = now.getTime() - nextFireTime.getTime();
+        if (diff >= misfireThreshold) {
+            nextFireTime = calculateNextFireTime(nextFireTime);
+        }
+    }
+
 
     @Override
     public Date computeFirstFireTime(org.quartz.Calendar calendar) {
