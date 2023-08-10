@@ -5,6 +5,7 @@
 package ru.finex.quartz.retry.trigger.impl;
 
 import static org.quartz.Trigger.*;
+import org.quartz.spi.OperableTrigger;
 import static ru.finex.quartz.retry.trigger.RetryCronTrigger.*;
 
 /**

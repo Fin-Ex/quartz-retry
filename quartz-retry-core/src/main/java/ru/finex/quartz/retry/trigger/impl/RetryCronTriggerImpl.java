@@ -15,6 +15,8 @@ import ru.finex.quartz.retry.trigger.RetryCronTrigger;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TimeZone;
 
 /**
@@ -55,7 +57,11 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
     @Override
     public String getCronExpression() {
-        return cronEx == null ? null : cronEx.getCronExpression();
+        if (cronEx != null) {
+            return cronEx.getCronExpression();
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -185,24 +191,17 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
     @Override
     public void updateAfterMisfire(org.quartz.Calendar cal) {
+        Map<Integer, MisfireHandler> misfireHandlers = new HashMap<>();
+        misfireHandlers.put(Trigger.MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY, new MisfireInsIngnoreMisfirePolicy());
+        misfireHandlers.put(MISFIRE_INSTRUCTION_SMART_POLICY, new MisfireSmartPolicy());
+        misfireHandlers.put(MISFIRE_INSTRUCTION_DO_NOTHING, new MisfireInstDoNothing());
+        misfireHandlers.put(MISFIRE_INSTRUCTION_FIRE_ONCE_NOW, new MisfireInsFireOnceNow());
+
         int instr = getMisfireInstruction();
+        MisfireHandler handler = misfireHandlers.get(instr);
 
-        if (instr == Trigger.MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY) {
-            return;
-        }
-
-        if (instr == MISFIRE_INSTRUCTION_SMART_POLICY) {
-            instr = MISFIRE_INSTRUCTION_FIRE_ONCE_NOW;
-        }
-
-        if (instr == MISFIRE_INSTRUCTION_DO_NOTHING) {
-            Date newFireTime = getFireTimeAfter(new Date());
-            while (newFireTime != null && cal != null && !cal.isTimeIncluded(newFireTime.getTime())) {
-                newFireTime = getFireTimeAfter(newFireTime);
-            }
-            setNextFireTime(newFireTime);
-        } else if (instr == MISFIRE_INSTRUCTION_FIRE_ONCE_NOW) {
-            setNextFireTime(new Date());
+        if (handler != null) {
+            handler.handleMisfire(this, cal);
         }
     }
 

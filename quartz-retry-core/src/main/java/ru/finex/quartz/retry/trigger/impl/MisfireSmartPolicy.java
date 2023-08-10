@@ -7,18 +7,12 @@ package ru.finex.quartz.retry.trigger.impl;
 import java.util.Date;
 import org.quartz.Calendar;
 import org.quartz.spi.OperableTrigger;
-import static ru.finex.quartz.retry.trigger.RetryCronTrigger.MISFIRE_INSTRUCTION_FIRE_ONCE_NOW;
 
 /**
  *
  * @author HOME
  */
-public class MisfireInsFireOnceNow extends MisfireInstruction implements MisfireHandler{
-
-    @Override
-    public void getMisfireBehavior(RetryCronScheduleBuilder cb){
-        cb.withMisfireHandlingInstructionFireAndProceed();          
-    };
+public class MisfireSmartPolicy implements MisfireHandler{
 
     @Override
     public void handleMisfire(OperableTrigger trigger, Calendar cal) {
