@@ -127,10 +127,6 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
                 "End time cannot be before start time");
         }
 
-        // round off millisecond...
-        // Note timeZone is not needed here as parameter for
-        // Calendar.getInstance(),
-        // since time zone is implicit when using a Date in the setTime method.
         java.util.Calendar cl = java.util.Calendar.getInstance();
         cl.setTime(startTime);
         cl.set(java.util.Calendar.MILLISECOND, 0);
