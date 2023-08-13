@@ -15,6 +15,8 @@ import ru.finex.quartz.retry.trigger.RetryCronTrigger;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TimeZone;
 
 /**
@@ -55,7 +57,11 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
     @Override
     public String getCronExpression() {
-        return cronEx == null ? null : cronEx.getCronExpression();
+        if (cronEx != null) {
+            return cronEx.getCronExpression();
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -93,7 +99,11 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
     @Override
     public String getExpressionSummary() {
-        return cronEx == null ? null : cronEx.getExpressionSummary();
+        if (cronEx != null) {
+        return cronEx.getExpressionSummary();
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -102,23 +112,10 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
             .inTimeZone(getTimeZone());
 
         int misfireInstruction = getMisfireInstruction();
-        switch (misfireInstruction) {
-            case MISFIRE_INSTRUCTION_SMART_POLICY:
-                break;
-            case MISFIRE_INSTRUCTION_DO_NOTHING:
-                cb.withMisfireHandlingInstructionDoNothing();
-                break;
-            case MISFIRE_INSTRUCTION_FIRE_ONCE_NOW:
-                cb.withMisfireHandlingInstructionFireAndProceed();
-                break;
-            case MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY:
-                cb.withMisfireHandlingInstructionIgnoreMisfires();
-                break;
-            default:
-                log.warn("Unrecognized misfire policy {}. Derived builder will use the default cron " +
-                    "trigger behavior (MISFIRE_INSTRUCTION_FIRE_ONCE_NOW)", misfireInstruction);
+        if (misfireInstruction!=MISFIRE_INSTRUCTION_SMART_POLICY){
+            MisfireInstruction misfireHandler = MisfireInstruction.createMisfireHandler(misfireInstruction);
+            misfireHandler.getMisfireBehavior(cb);
         }
-
         return cb;
     }
 
@@ -134,10 +131,6 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
                 "End time cannot be before start time");
         }
 
-        // round off millisecond...
-        // Note timeZone is not needed here as parameter for
-        // Calendar.getInstance(),
-        // since time zone is implicit when using a Date in the setTime method.
         java.util.Calendar cl = java.util.Calendar.getInstance();
         cl.setTime(startTime);
         cl.set(java.util.Calendar.MILLISECOND, 0);
@@ -193,29 +186,24 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
     @Override
     protected boolean validateMisfireInstruction(int misfireInstruction) {
-        return misfireInstruction >= MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY && misfireInstruction <= MISFIRE_INSTRUCTION_DO_NOTHING;
+        boolean isInRange = misfireInstruction >= MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY && 
+                            misfireInstruction <= MISFIRE_INSTRUCTION_DO_NOTHING;
+        return isInRange;
     }
 
     @Override
     public void updateAfterMisfire(org.quartz.Calendar cal) {
+        Map<Integer, MisfireHandler> misfireHandlers = new HashMap<>();
+        misfireHandlers.put(Trigger.MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY, new MisfireInsIngnoreMisfirePolicy());
+        misfireHandlers.put(MISFIRE_INSTRUCTION_SMART_POLICY, new MisfireSmartPolicy());
+        misfireHandlers.put(MISFIRE_INSTRUCTION_DO_NOTHING, new MisfireInstDoNothing());
+        misfireHandlers.put(MISFIRE_INSTRUCTION_FIRE_ONCE_NOW, new MisfireInsFireOnceNow());
+
         int instr = getMisfireInstruction();
+        MisfireHandler handler = misfireHandlers.get(instr);
 
-        if (instr == Trigger.MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY) {
-            return;
-        }
-
-        if (instr == MISFIRE_INSTRUCTION_SMART_POLICY) {
-            instr = MISFIRE_INSTRUCTION_FIRE_ONCE_NOW;
-        }
-
-        if (instr == MISFIRE_INSTRUCTION_DO_NOTHING) {
-            Date newFireTime = getFireTimeAfter(new Date());
-            while (newFireTime != null && cal != null && !cal.isTimeIncluded(newFireTime.getTime())) {
-                newFireTime = getFireTimeAfter(newFireTime);
-            }
-            setNextFireTime(newFireTime);
-        } else if (instr == MISFIRE_INSTRUCTION_FIRE_ONCE_NOW) {
-            setNextFireTime(new Date());
+        if (handler != null) {
+            handler.handleMisfire(this, cal);
         }
     }
 
@@ -237,40 +225,55 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
 
     @Override
     public void updateWithNewCalendar(Calendar calendar, long misfireThreshold) {
-        nextFireTime = getFireTimeAfter(previousFireTime);
+        recalculateNextFireTime(calendar, misfireThreshold);
+    }
 
-        if (nextFireTime == null || calendar == null) {
-            return;
-        }
+    private void recalculateNextFireTime(Calendar calendar, long misfireThreshold) {
+        nextFireTime = calculateNextFireTime(nextFireTime);
 
-        Date now = new Date();
-        while (nextFireTime != null && !calendar.isTimeIncluded(nextFireTime.getTime())) {
+        while (nextFireTime != null && !isTimeIncludedInCalendar(calendar, nextFireTime)) {
+            nextFireTime = calculateNextFireTime(nextFireTime);
 
-            nextFireTime = getFireTimeAfter(nextFireTime);
-
-            if (nextFireTime == null) {
+            if (nextFireTime == null || isYearGreaterThanThreshold(nextFireTime)) {
                 break;
             }
 
-            // avoid infinite loop
-            // Use gregorian only because the constant is based on Gregorian
-            java.util.Calendar c = new java.util.GregorianCalendar();
-            c.setTime(nextFireTime);
-            if (c.get(java.util.Calendar.YEAR) > YEAR_TO_GIVEUP_SCHEDULING_AT) {
-                nextFireTime = null;
-            }
-
-            if (nextFireTime != null && nextFireTime.before(now)) {
-                long diff = now.getTime() - nextFireTime.getTime();
-                if (diff >= misfireThreshold) {
-                    nextFireTime = getFireTimeAfter(nextFireTime);
-                }
+            if (isNextFireTimeBeforeNow(nextFireTime)) {
+                handleMisfireThreshold(nextFireTime, misfireThreshold);
             }
         }
     }
 
+    private Date calculateNextFireTime(Date fireTime) {
+        return (fireTime != null) ? getFireTimeAfter(fireTime) : null;
+    }
+
+    private boolean isTimeIncludedInCalendar(Calendar calendar, Date time) {
+        return calendar != null && calendar.isTimeIncluded(time.getTime());
+    }
+
+    private boolean isYearGreaterThanThreshold(Date date) {
+        java.util.Calendar calendar = new java.util.GregorianCalendar();
+        calendar.setTime(date);
+        return calendar.get(java.util.Calendar.YEAR) > YEAR_TO_GIVEUP_SCHEDULING_AT;
+    }
+
+    private boolean isNextFireTimeBeforeNow(Date nextFireTime) {
+        Date now = new Date();
+        return nextFireTime != null && nextFireTime.before(now);
+    }
+
+    private void handleMisfireThreshold(Date nextFireTime, long misfireThreshold) {
+        Date now = new Date();
+        long diff = now.getTime() - nextFireTime.getTime();
+        if (diff >= misfireThreshold) {
+            nextFireTime = calculateNextFireTime(nextFireTime);
+        }
+    }
+
+
     @Override
-    public Date computeFirstFireTime(org.quartz.Calendar calendar) {
+    public Date computeFirstFireTime(Calendar calendar) {
         nextFireTime = getFireTimeAfter(new Date(getStartTime().getTime() - 1000L));
 
         while (nextFireTime != null && calendar != null && !calendar.isTimeIncluded(nextFireTime.getTime())) {
@@ -308,11 +311,19 @@ public class RetryCronTriggerImpl extends AbstractTrigger<RetryCronTrigger> impl
     }
 
     protected Date getTimeAfter(Date afterTime) {
-        return cronEx == null ? null : cronEx.getTimeAfter(afterTime);
+        if (cronEx != null) {
+            return cronEx.getTimeAfter(afterTime);
+        } else {
+            return null;
+        }
     }
 
     protected Date getTimeBefore(Date eTime) {
-        return cronEx == null ? null : cronEx.getTimeBefore(eTime);
+        if (cronEx != null) {
+            return cronEx.getTimeBefore(eTime);
+        } else {
+            return null;
+        }
     }
 
 }
